@@ -68,8 +68,8 @@ class BigIntegerTest {
 
     @Test
     void longBuild() {
-        BigInteger n = new BigInteger(0x102344, 1024);
-        assertEquals(n.toString(), "102344");
+        BigInteger n = new BigInteger(0x1023FFFFFFFFF224L);
+        assertEquals(n.toString(), "1023FFFFFFFFF224");
     }
 
     @Test
@@ -123,10 +123,19 @@ class BigIntegerTest {
 
     @Test
     void modMultiply() {
+        BigInteger n1 = new BigInteger("ff23333333333333332dda", 1024);
+        BigInteger n2 = new BigInteger("532544543444444", 1024);
+        BigInteger n3 = new BigInteger("22222222222f1", 1024);
+        BigInteger res = new BigInteger("26d7da76586627d1601b639a3", 1024);
+        assertEquals(res, n1.multiplyMod(n2, n3));
     }
 
     @Test
     void modPow() {
+        BigInteger n1 = new BigInteger("ff23333333333333332dda", 1024);
+        BigInteger n2 = new BigInteger("532544543444444", 1024);
+        BigInteger n3 = new BigInteger("22222222222f1", 1024);
+        System.out.println(n1.powMod(n2, n3));
     }
 
     @Test
