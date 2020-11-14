@@ -22,12 +22,12 @@ public class RSA {
 
     public static Key generateKey(int bitLen) {
         BigInteger p = null, q = null, n = null, e, d = null;
-        e = new BigInteger(new Random().nextLong(), bitLen);
+        e = BigInteger.of(new Random().nextLong());
         while (d == null) {
             p = BigInteger.probablePrime(bitLen);
             q = BigInteger.probablePrime(bitLen);
             n = p.multiply(q);
-            BigInteger φn = p.subtractEqual(1).multiply(q.subtractEqual(1));
+            BigInteger φn = p.subtract(1).multiply(q.subtract(1));
             d = e.inverse(φn);
         }
         return new Key(p, q, n, e, d);
