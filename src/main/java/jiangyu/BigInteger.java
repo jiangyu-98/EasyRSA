@@ -1,7 +1,6 @@
 package jiangyu;
 
 import java.lang.Math;
-import java.lang.invoke.VolatileCallSite;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -13,7 +12,7 @@ public class BigInteger implements Comparable<BigInteger> {
     static final long BASE = 1 << BASE_BITS;
     static final long BASE_MASK = (1 << BASE_BITS) - 1;
     static final Random RANDOM = new Random();
-    static int millerRabinRepeat = 50;
+    static int millerRabinRepeat = 10;
     static int smallIntegerDLength = bitLengthToLen(64);
     int len = 0;
     long[] d;
@@ -47,6 +46,8 @@ public class BigInteger implements Comparable<BigInteger> {
             hexString = hexString.substring(1, hexString.length());
             sign = -1;
         }
+
+        hexString = hexString.toUpperCase();
 
         bitLength = (hexString.length() - 1) * 4 + switch (hexString.charAt(0)) {
             case '0' -> 0;
@@ -91,6 +92,21 @@ public class BigInteger implements Comparable<BigInteger> {
         return (len - 1) * BASE_BITS + (Long.SIZE - Long.numberOfLeadingZeros(d[len - 1]));
     }
 
+    int numberOfTrailingZeros() {
+        int s = 0;
+        for (int i = 0; i < len; i++) {
+            long temp = d[i];
+            for (int j = 0; j < BASE_BITS && (temp & 1) == 0; j++) {
+                s++;
+                temp >>= 1;
+            }
+            if (temp != 0) {
+                break;
+            }
+        }
+        return s;
+    }
+
     // bit数转数组长度
     private static int bitLengthToLen(int bitLength) {
         int l = bitLength / BASE_BITS;
@@ -126,11 +142,12 @@ public class BigInteger implements Comparable<BigInteger> {
             int bitLength = this.bitLength();
             int bitsShiftLeftPadding = BASE_BITS - bitsShiftRight;
             res.len = bitLengthToLen(bitLength - bitsShift);
-            for (int i = 0; i < res.len - 1; i++) {
-                res.d[i] = (this.d[i + shiftArrayNumber] >> bitsShiftRight) |
-                        ((this.d[i + shiftArrayNumber + 1] << bitsShiftLeftPadding) & BASE_MASK);
+            for (int i = 0; i < res.len; i++) {
+                res.d[i] = (this.d[i + shiftArrayNumber] >> bitsShiftRight);
+                if (i + shiftArrayNumber + 1 < len) {
+                    res.d[i] = res.d[i] | ((this.d[i + shiftArrayNumber + 1] << bitsShiftLeftPadding) & BASE_MASK);
+                }
             }
-            res.d[res.len - 1] = this.d[res.len - 1 + shiftArrayNumber] >> bitsShiftRight;
             return res;
         }
     }
@@ -282,7 +299,11 @@ public class BigInteger implements Comparable<BigInteger> {
     }
 
     public BigInteger mod(BigInteger val) {
-        return this.subtract(this.divide(val).multiply(val));
+        if (this.compareToRaw(val) < 0) {
+            return this.copy();
+        } else{
+            return this.subtract(this.divide(val).multiply(val));
+        }
     }
 
     public BigInteger powMod(BigInteger exponent, BigInteger m) {
@@ -308,7 +329,6 @@ public class BigInteger implements Comparable<BigInteger> {
     BigInteger x, y;
 
     void gcdExtend(BigInteger a, BigInteger b) {
-        System.out.println("a = "  + a +", b = " + b);
         if (!b.equals(0)) {
             gcdExtend(b, a.mod(b));
         }
@@ -320,8 +340,6 @@ public class BigInteger implements Comparable<BigInteger> {
             x = y;
             y = temp.subtract(a.divide(b).multiply(y));
         }
-
-        System.out.println("x = "  + x +", y = " + y);
     }
 
     public boolean testBit(int n) {
@@ -343,9 +361,13 @@ public class BigInteger implements Comparable<BigInteger> {
     public static BigInteger probablePrime(int maxBitsBinary) {
         while (true) {
             BigInteger randomPrime = BigInteger.random(maxBitsBinary);
+
             if (randomPrime.isProbablePrime()) {
                 return randomPrime;
+            } else{
+                System.out.println(randomPrime);
             }
+
         }
     }
 
@@ -354,27 +376,25 @@ public class BigInteger implements Comparable<BigInteger> {
     public boolean isProbablePrime() {
         for (int prime : smallPrimes) {
             if (this.mod(new BigInteger(prime)).equals(0)) {
-                return false;
+                return this.equals(prime);
             }
         }
         BigInteger nSubtract1 = this.subtract(1);
-        int s = 0;
-        for (int i = 0; i < nSubtract1.len; i++) {
-            long temp = nSubtract1.d[i];
-            while ((temp & 1) == 0) {
-                s++;
-                temp >>= 1;
-            }
-            if (temp != 0) {
-                break;
-            }
-        }
+        int s = nSubtract1.numberOfTrailingZeros();
         BigInteger d = this.shiftRight(s);
         for (int i = 0; i < millerRabinRepeat; i++) {
+            // BigInteger a = random(this.bitLength() - 1);
+            // BigInteger x = a.powMod(nSubtract1, this);
+            // if (!x.equals(1)) {
+            //     return false;
+            // }
+
+
             BigInteger a = random(this.bitLength() - 1);
             BigInteger x = a.powMod(d, this);
+            BigInteger y = BigInteger.of(0);
             for (int j = 0; j < s; j++) {
-                BigInteger y = x.multiplyMod(x, this);
+                y = x.multiplyMod(x, this);
                 if (y.equals(1) && !x.equals(1) && !x.equals(nSubtract1)) {
                     return false;
                 } else {
@@ -391,13 +411,6 @@ public class BigInteger implements Comparable<BigInteger> {
     public BigInteger copy() {
         return new BigInteger(Arrays.copyOf(d, d.length), len);
     }
-
-    public BigInteger set(BigInteger val) {
-        d = val.d;
-        len = val.len;
-        return this;
-    }
-
 
     @Override
     public boolean equals(Object o) {

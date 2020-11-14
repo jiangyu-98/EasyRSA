@@ -42,7 +42,7 @@ class BigIntegerTest {
 
         BigInteger res = BigInteger.of(0).subtract(BigInteger.of(2));
         System.out.println(res.sign);
-        assertEquals("-2",res.toString() );
+        assertEquals("-2", res.toString());
     }
 
     @Test
@@ -78,6 +78,14 @@ class BigIntegerTest {
         BigInteger n2 = new BigInteger("34444423");
         BigInteger n3 = new BigInteger("1A8798C2");
         assertEquals(n3, n1.mod(n2));
+
+        n1 = BigInteger.of(0x32143143);
+        n2 = new BigInteger("144C3B27FE");
+        n3 = new BigInteger("144C3B27FF");
+        System.out.println(n1.powMod(n2, n3));
+        assertEquals(BigInteger.of(1), n1.powMod(n2, n3));
+
+
     }
 
 
@@ -124,8 +132,10 @@ class BigIntegerTest {
 
     @Test
     void shiftRight() {
-        BigInteger n1 = new BigInteger("3");
-        assertTrue(n1.shiftRight(1).equals(1));
+        BigInteger n1 = new BigInteger("144c3b27ff");
+        BigInteger n2 = new BigInteger("A261D93FF");
+
+        assertEquals(n2, n1.shiftRight(1));
     }
 
     @Test
@@ -165,4 +175,28 @@ class BigIntegerTest {
         BigInteger res = new BigInteger("421767a");
         assertEquals(res, n1.inverse(base));
     }
+
+    @Test
+    void numberOfTrailingZeros() {
+        BigInteger n1 = BigInteger.of(0x42342000);
+        assertEquals(13, n1.numberOfTrailingZeros());
+    }
+
+    @Test
+    void probablePrime() {
+
+        BigInteger res= BigInteger.probablePrime(1024);
+        System.out.println(res);
+    }
+
+    @Test
+    void isProbablePrime() {
+        BigInteger n1 = new BigInteger("5");
+        assertTrue(n1.isProbablePrime());
+
+        n1 = new BigInteger("144C3B27FF");
+        assertTrue(n1.isProbablePrime());
+    }
+
+
 }
