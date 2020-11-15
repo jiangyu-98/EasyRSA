@@ -1,5 +1,6 @@
 package jiangyu;
 
+
 import java.lang.Math;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -8,7 +9,7 @@ import java.util.Random;
 
 
 public class BigInteger implements Comparable<BigInteger> {
-    static final int BASE_BITS = 6;
+    static final int BASE_BITS = 4;
     static final long BASE = 1 << BASE_BITS;
     static final long BASE_MASK = (1 << BASE_BITS) - 1;
     static final Random RANDOM = new Random();
@@ -16,7 +17,6 @@ public class BigInteger implements Comparable<BigInteger> {
     static int smallIntegerDLength = bitLengthToLen(64);
     int len = 0;
     long[] d;
-    int bitLength;
     int sign = 1;
 
     private static final int CACHE_NUMBER = 256;
@@ -42,14 +42,21 @@ public class BigInteger implements Comparable<BigInteger> {
     }
 
     BigInteger(String hexString) {
+        int startPos = 0;
         if (hexString.charAt(0) == '-') {
-            hexString = hexString.substring(1, hexString.length());
+            startPos = 1;
             sign = -1;
         }
+        for (int i = startPos; i < hexString.length(); i++) {
+            if (hexString.charAt(i) == '0') {
+                startPos++;
+            } else {
+                break;
+            }
+        }
+        hexString = hexString.substring(startPos);
 
-        hexString = hexString.toUpperCase();
-
-        bitLength = (hexString.length() - 1) * 4 + switch (hexString.charAt(0)) {
+        int bitLength = (hexString.length() - 1) * 4 + switch (hexString.charAt(0)) {
             case '0' -> 0;
             case '1' -> 1;
             case '2', '3' -> 2;
@@ -115,6 +122,11 @@ public class BigInteger implements Comparable<BigInteger> {
         } else {
             return l + 1;
         }
+    }
+
+    public boolean testBit(int n) {
+        int i = n / BASE_BITS;
+        return ((d[i] >> (n - i * BASE_BITS)) & 1) == 1;
     }
 
     // 数组左移
@@ -247,11 +259,14 @@ public class BigInteger implements Comparable<BigInteger> {
 
     // 乘法
     public BigInteger multiply(BigInteger val) {
+        if (this.equals(0) || val.equals(0)) {
+            return BigInteger.of(0);
+        }
+
         long[] array = new long[len + val.len];
 
         for (int i = 0; i < len; i++) {
             for (int j = 0; j < val.len; j++) {
-
                 array[i + j] += d[i] * val.d[j];
 
             }
@@ -301,7 +316,7 @@ public class BigInteger implements Comparable<BigInteger> {
     public BigInteger mod(BigInteger val) {
         if (this.compareToRaw(val) < 0) {
             return this.copy();
-        } else{
+        } else {
             return this.subtract(this.divide(val).multiply(val));
         }
     }
@@ -319,34 +334,31 @@ public class BigInteger implements Comparable<BigInteger> {
     }
 
     public BigInteger inverse(BigInteger n) {
-        gcdExtend(n, this);
+        BigInteger y = gcdExtend(n, this)[2];
         if (y.sign == -1) {
             y = y.add(n);
+        }
+        if (!y.multiplyMod(this, n).equals(1)) {
+            throw new IllegalArgumentException("求逆错误" + "this:\n" + this + "\nn:\n" + n);
         }
         return y;
     }
 
-    BigInteger x, y;
-
-    void gcdExtend(BigInteger a, BigInteger b) {
-        if (!b.equals(0)) {
-            gcdExtend(b, a.mod(b));
-        }
+    public BigInteger[] gcdExtend(BigInteger a, BigInteger b) {
         if (b.equals(0)) {
-            x = BigInteger.of(1);
-            y = BigInteger.of(0);
+            BigInteger x1 = BigInteger.of(1);
+            BigInteger y1 = BigInteger.of(0);
+            return new BigInteger[]{a, x1, y1};
         } else {
-            BigInteger temp = x;
-            x = y;
-            y = temp.subtract(a.divide(b).multiply(y));
+            BigInteger[] temp = gcdExtend(b, a.mod(b));
+            BigInteger r = temp[0];
+            BigInteger x1 = temp[1];
+            BigInteger y1 = temp[2];
+
+            BigInteger y = x1.subtract(a.divide(b).multiply(y1));
+            return new BigInteger[]{r, y1, y};
         }
     }
-
-    public boolean testBit(int n) {
-        int i = n / BASE_BITS;
-        return ((d[i] >> (n - i * BASE_BITS)) & 1) == 1;
-    }
-
 
     public static BigInteger random(int maxBitsBinary) {
         int maxLen = (int) Math.ceil((float) maxBitsBinary / BASE_BITS);
@@ -361,17 +373,14 @@ public class BigInteger implements Comparable<BigInteger> {
     public static BigInteger probablePrime(int maxBitsBinary) {
         while (true) {
             BigInteger randomPrime = BigInteger.random(maxBitsBinary);
-
+            randomPrime.d[0] |= 1;
             if (randomPrime.isProbablePrime()) {
                 return randomPrime;
-            } else{
-                System.out.println(randomPrime);
             }
-
         }
     }
 
-    private static final int[] smallPrimes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41};
+    private static final int[] smallPrimes = {3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41};
 
     public boolean isProbablePrime() {
         for (int prime : smallPrimes) {
@@ -383,13 +392,6 @@ public class BigInteger implements Comparable<BigInteger> {
         int s = nSubtract1.numberOfTrailingZeros();
         BigInteger d = this.shiftRight(s);
         for (int i = 0; i < millerRabinRepeat; i++) {
-            // BigInteger a = random(this.bitLength() - 1);
-            // BigInteger x = a.powMod(nSubtract1, this);
-            // if (!x.equals(1)) {
-            //     return false;
-            // }
-
-
             BigInteger a = random(this.bitLength() - 1);
             BigInteger x = a.powMod(d, this);
             BigInteger y = BigInteger.of(0);
@@ -432,14 +434,15 @@ public class BigInteger implements Comparable<BigInteger> {
         if (o == 0) {
             return len == 1 && d[0] == 0;
         }
-        for (int i = 0; o != 0; i++) {
+        int i = 0;
+        for (; o != 0; i++) {
             if ((o & BASE_MASK) != d[i]) {
                 return false;
             }
             o >>= BASE_BITS;
-            i++;
         }
-        return true;
+
+        return i == len;
     }
 
     @Override
@@ -461,14 +464,12 @@ public class BigInteger implements Comparable<BigInteger> {
         return (int) (d[len - 1] - o.d[len - 1]);
     }
 
-
     @Override
     public int hashCode() {
         int result = Objects.hash(len);
         result = 31 * result + Arrays.hashCode(d);
         return result;
     }
-
 
     @Override
     public String toString() {
@@ -505,5 +506,17 @@ public class BigInteger implements Comparable<BigInteger> {
         }
 
         return sb.toString();
+    }
+
+    public String toString(int specilen) {
+        String str = this.toString();
+        if (str.length() > specilen) {
+            throw new IllegalArgumentException("toString");
+        }
+        if (str.length() == specilen) {
+            return str;
+        } else {
+            return "0".repeat(specilen - str.length()) + str;
+        }
     }
 }

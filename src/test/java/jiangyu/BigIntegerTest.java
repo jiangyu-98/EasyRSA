@@ -2,7 +2,6 @@ package jiangyu;
 
 import org.junit.jupiter.api.Test;
 
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class BigIntegerTest {
@@ -23,7 +22,6 @@ class BigIntegerTest {
         BigInteger n3 = new BigInteger("244");
         assertEquals(n3, n1.add(n2));
 
-
         n1 = new BigInteger("AF123123123BCDE444213AF1C2323222");
         n2 = new BigInteger("AF123123123BCDE444213AF1C2323222");
         assertEquals(n1, n1.add(n2).subtract(n2));
@@ -41,7 +39,6 @@ class BigIntegerTest {
         assertEquals(n1, n1.subtract(n2).add(n2));
 
         BigInteger res = BigInteger.of(0).subtract(BigInteger.of(2));
-        System.out.println(res.sign);
         assertEquals("-2", res.toString());
     }
 
@@ -67,7 +64,6 @@ class BigIntegerTest {
 
         n1 = new BigInteger("AF123123123BCDE444213AF1C2323222");
         n2 = new BigInteger("AF123123123BCDE444213AF1C2323222");
-        BigInteger temp = n1.multiply(n2);
         assertEquals(n1, n1.multiply(n2).divide(n1));
     }
 
@@ -82,12 +78,8 @@ class BigIntegerTest {
         n1 = BigInteger.of(0x32143143);
         n2 = new BigInteger("144C3B27FE");
         n3 = new BigInteger("144C3B27FF");
-        System.out.println(n1.powMod(n2, n3));
         assertEquals(BigInteger.of(1), n1.powMod(n2, n3));
-
-
     }
-
 
     @Test
     void longBuild() {
@@ -163,6 +155,14 @@ class BigIntegerTest {
     }
 
     @Test
+    void equal() {
+        BigInteger n2 = new BigInteger("356242E7AD753AB63FCCED44E7CACDA0EDB5B353E59D81AEBAC595A14C4CFD702");
+        assertFalse(n2.equals(2));
+        n2 = new BigInteger("5");
+        assertTrue(n2.equals(5));
+    }
+
+    @Test
     void bitLength() {
         assertEquals(4, BigInteger.of(8).bitLength());
         assertEquals(14, (new BigInteger("3FFA")).bitLength());
@@ -170,9 +170,9 @@ class BigIntegerTest {
 
     @Test
     void inverse() {
-        BigInteger n1 = new BigInteger("32332");
-        BigInteger base = new BigInteger("4234562");
-        BigInteger res = new BigInteger("421767a");
+        BigInteger n1 = new BigInteger("2");
+        BigInteger base = new BigInteger("B");
+        BigInteger res = new BigInteger("6");
         assertEquals(res, n1.inverse(base));
     }
 
@@ -184,9 +184,7 @@ class BigIntegerTest {
 
     @Test
     void probablePrime() {
-
-        BigInteger res= BigInteger.probablePrime(1024);
-        System.out.println(res);
+        BigInteger res = BigInteger.probablePrime(64);
     }
 
     @Test
@@ -198,5 +196,11 @@ class BigIntegerTest {
         assertTrue(n1.isProbablePrime());
     }
 
-
+    @Test
+    void isProbablePrime2() {
+        BigInteger n1 = new BigInteger("F81BBE2D143160D23FF06B3BAE953B659A902382458BBC62930F8AB1C05600C3");
+        n1.isProbablePrime();
+        BigInteger n2 = new BigInteger("356242E7AD753AB63FCCED44E7CACDA0EDB5B353E59D81AEBAC595A14C4CFD702");
+        assertFalse(n2.isProbablePrime());
+    }
 }
